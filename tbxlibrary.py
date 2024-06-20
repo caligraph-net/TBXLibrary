@@ -37,20 +37,23 @@ def tbx2dict(src_file, lang_list, src_lang='en', progressbar=False):
     if progressbar:
         pbar = tqdm(total=sum(1 for _ in root[1][0].iter('termEntry')))
 
-    for term in root[1][0].iter('termEntry'):
-        src_ent = None
+    for term in root[0][0].iter('termEntry'):
+        src_ents = []
         for term_lang in term.iter('langSet'):
             lang = term_lang.get('{http://www.w3.org/XML/1998/namespace}lang')
             if lang == src_lang:
-                src_ent = term_lang[0][0].text
+                for tig in term_lang.iter('tig'):
+                    src_ents.append(tig[0].text)
 
-        if not src_ent:  # skip if without English entry
+        if not len(src_ents):  # skip if without English entry
             continue
 
         for term_lang in term.iter('langSet'):
             lang = term_lang.get('{http://www.w3.org/XML/1998/namespace}lang')
             if lang in lang_list and lang != src_lang:
-                ent_dict[lang][src_ent] = term_lang[0][0].text
+                for translated in term_lang.iter('tig'):
+                    for src_ent in src_ents:
+                        ent_dict[lang].setdefault(src_ent,[]).append(translated[0].text)
 
         if progressbar:
             pbar.update(1)
